@@ -1,14 +1,19 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Rocket : MonoBehaviour
 {
     [SerializeField] float rcsThrust = 200f;
     [SerializeField] float mainThrust = 50f;
+    [SerializeField] int currentLevel = 0;
 
     Rigidbody rigidBody;
     AudioSource audioSource;
+
+    enum State { Alive, Dying, Transcending };
+    State state = State.Alive;
 
     // Start is called before the first frame update
     void Start()
@@ -20,22 +25,38 @@ public class Rocket : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Thrust();
-        Rotate();
+        // stop sound
+        if (state == State.Alive)
+        {
+            Thrust();
+            Rotate();
+        }
     }
 
     void OnCollisionEnter(Collision collision)
     {
+        if (state != State.Alive) // ignore collisions when dead
+        {
+            return;
+        }
+
         switch (collision.gameObject.tag)
         {
-            case "Friendly":
-                print("Friendly");
+            case "Friendly": // do nothing
                 break;
-            case "Fuel":
-                print("Fuel");
+            case "Finish":
+                {
+                    state = State.Transcending;
+                    currentLevel += 1;
+                    Invoke("LoadNextScene", 1f); // parameterize time.
+                }
                 break;
             default:
-                print("Dead");
+                {
+                    state = State.Dying;
+                    currentLevel = 0;
+                    Invoke("LoadNextScene", 1f); // parameterize time.
+                }
                 break;
         }
     }
@@ -71,6 +92,16 @@ public class Rocket : MonoBehaviour
         }
 
         rigidBody.freezeRotation = false; // resumes physics control of rotation
+    }
+
+    private void LoadNextScene()
+    {
+        // Change if statement after figuring......
+        if (currentLevel > 1)
+        {
+            currentLevel = 1;
+        }
+        SceneManager.LoadScene(currentLevel);
     }
 
 }
